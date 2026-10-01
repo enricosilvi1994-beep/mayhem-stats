@@ -1,4 +1,4 @@
-name: Statistiche ARAM Mayhem
+name: Statistiche ARAM
 
 on:
   schedule:
@@ -38,7 +38,7 @@ jobs:
           PYTHONUNBUFFERED: "1"
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           RIOT_ID: ${{ vars.RIOT_ID || 'PerdoConStile#EASY' }}
-          MAYHEM_QUEUE: ${{ vars.MAYHEM_QUEUE || '1750' }}
+          MAYHEM_QUEUE: ${{ vars.MAYHEM_QUEUE || '450' }}
           RIOT_PLATFORM: ${{ vars.RIOT_PLATFORM || 'euw1' }}
           MAX_MATCHES: ${{ github.event.inputs.max_matches || vars.MAX_MATCHES || '1500' }}
         run: python mayhem_crawler.py --state ../data/state.json --out ../docs/stats.json
