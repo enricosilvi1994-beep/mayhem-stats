@@ -1,0 +1,53 @@
+name: Statistiche ARAM Mayhem
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # ogni giorno alle 04:17 UTC
+  workflow_dispatch:        # avvio manuale dalla tab Actions
+    inputs:
+      max_matches:
+        description: "Partite massime da scaricare in questa esecuzione"
+        default: "1500"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mayhem-stats
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    defaults:
+      run:
+        working-directory: crawler   # i file .py stanno nella cartella crawler/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test del crawler
+        run: python -m unittest -v test_mayhem_crawler
+
+      - name: Scarica partite e aggiorna stats.json
+        env:
+          PYTHONUNBUFFERED: "1"
+          RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          RIOT_ID: ${{ vars.RIOT_ID || 'PerdoConStile#EASY' }}
+          MAYHEM_QUEUE: ${{ vars.MAYHEM_QUEUE || '0' }}
+          RIOT_PLATFORM: ${{ vars.RIOT_PLATFORM || 'euw1' }}
+          MAX_MATCHES: ${{ github.event.inputs.max_matches || vars.MAX_MATCHES || '1500' }}
+        run: python mayhem_crawler.py --state ../data/state.json --out ../docs/stats.json
+
+      - name: Salva i risultati
+        if: always()
+        run: |
+          git config user.name "mayhem-stats-bot"
+          git config user.email "mayhem-stats-bot@users.noreply.github.com"
+          git add ../data/state.json ../docs/stats.json || true
+          git diff --cached --quiet || git commit -m "Aggiorna statistiche Mayhem $(date -u +%F)"
+          git push
